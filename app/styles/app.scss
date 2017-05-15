@@ -1,0 +1,43 @@
+// Overrides
+.portfolio__container {
+  width: 450px;
+}
+
+// Dungeon
+.dungeon {
+  position: relative;
+  height: 410px;
+  width: 100%;
+  border: 1px solid #000;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.dungeonViewer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 100%;
+  background:radial-gradient(ellipse at center, rgba(255,255,255,0) 0%, rgba(255,255,255,0) 50%, rgba(0,0,0,1) 79%, rgba(0,0,0,1) 100%);
+}
+
+.dungeonBoard {
+  height: 800px;
+  width: 1000px;
+  background: url(https://s3.eu-west-2.amazonaws.com/amlstatic/img/concrete-floor.png);
+}
+
+.dungeonBoard__row {
+  line-height: 10px;
+}
+
+.dungeonBoard__cell {
+  height: 10px;
+  width: 10px;
+  float: left;
+}
+
+.dungeonBoard__cell--wall {
+  background: orange;
+}
