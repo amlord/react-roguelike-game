@@ -3,6 +3,7 @@ var React = require('react');
 var RoguelikeDungeonEngine = require('RoguelikeDungeonEngine');
 
 var DungeonBoard = require('DungeonBoard');
+var DungeonScoreboard = require('DungeonScoreboard');
 
 // Roguelike Dungeon Crawler App
 var RoguelikeDungeonCrawlerApp = React.createClass({
@@ -53,9 +54,11 @@ var RoguelikeDungeonCrawlerApp = React.createClass({
     },
     render: function()
     {
+        let user = this.state.user;
+
         return (
             <div>
-              <div>Scoreboard: </div>
+              <DungeonScoreboard user={user} />
               <div className="dungeon">
                 <DungeonBoard squares={this.state.squares} />
                 <div className="dungeonViewer"></div>

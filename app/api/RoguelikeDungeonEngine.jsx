@@ -16,59 +16,64 @@ let config = {
     enemies: {
         max: 4,
         min: 7,
-        damage: -10
+        damage: 10,
+        health: {
+            min: 10,
+            max: 20
+        }
     },
     weapons: {
         max: 2,
         min: 4,
         types: [{
             levels: [1],
-            type: 'Fists',
+            name: 'Fists',
             damage: 1
         },
         {
             levels: [1],
-            type: 'Dagger',
+            name: 'Dagger',
             damage: 2
         },
         {
             levels: [1, 2],
-            type: 'Nunchucks',
+            name: 'Nunchucks',
             damage: 3
         },
         {
             levels: [2],
-            type: 'Sword',
+            name: 'Sword',
             damage: 4
         },
         {
             levels: [2, 3],
-            type: 'Pistol',
+            name: 'Pistol',
             damage: 5
         },
         {
             levels: [3],
-            type: 'Shotgun',
+            name: 'Shotgun',
             damage: 6
         },
         {
             levels: [3, 4],
-            type: 'M-16',
+            name: 'M-16',
             damage: 7
         },
         {
             levels: [4],
-            type: 'Grenade',
+            name: 'Grenade',
             damage: 8
         },
         {
             levels: [4],
-            type: 'Rocket Launcher',
+            name: 'Rocket Launcher',
             damage: 9
         }]
     },
     boss: {
-        value: 200
+        damage: 50,
+        health: 200
     },
     start: {
         health: 100,
@@ -97,7 +102,16 @@ let currentRoom = {
 let map = [];
 
 // starting postion
-let userPosition = [];
+let user = {
+    health: config.start.health,
+    weapon: config.weapons.types[0],
+    xp: config.start.xp,
+    position: [],
+    messages: [
+        'The game begins',
+        'Kill the boss on level 4'
+    ]
+};
 
 // exported object
 module.exports = {
@@ -139,7 +153,7 @@ module.exports = {
   moveLeft: function()
   {
       // attempt moving to another square
-      _moveToSquare( (userPosition[0] - 1), (userPosition[1]) );
+      _moveToSquare( (user.position[0] - 1), (user.position[1]) );
 
       // return the current game state
       return _getCurrentState();
@@ -147,7 +161,7 @@ module.exports = {
   moveRight: function()
   {
       // attempt moving to another square
-      _moveToSquare( (userPosition[0] + 1), (userPosition[1]) );
+      _moveToSquare( (user.position[0] + 1), (user.position[1]) );
 
       // return the current game state
       return _getCurrentState();
@@ -155,7 +169,7 @@ module.exports = {
   moveUp: function()
   {
       // attempt moving to another square
-      _moveToSquare( (userPosition[0]), (userPosition[1] - 1) );
+      _moveToSquare( (user.position[0]), (user.position[1] - 1) );
 
       // return the current game state
       return _getCurrentState();
@@ -163,7 +177,7 @@ module.exports = {
   moveDown: function()
   {
       // attempt moving to another square
-      _moveToSquare( (userPosition[0]), (userPosition[1] + 1) );
+      _moveToSquare( (user.position[0]), (user.position[1] + 1) );
 
       // return the current game state
       return _getCurrentState();
@@ -175,13 +189,9 @@ module.exports = {
 function _getCurrentState()
 {
     return {
-          squares: map,
-          user: {
-              health: config.start.health,
-              xp: config.start.xp,
-              position: userPosition
-          }
-      };
+        squares: map,
+        user: user
+    };
 }
 
 // generate random room size
@@ -498,11 +508,15 @@ function _addHealthPotionsToMap(level)
 function _addEnemiesToMap(level)
 {
     let enemies = _randomIntFromInterval(config.enemies.min, config.enemies.max);
-    let value = config.enemies.damage;
 
     // place each of the enemies
     for(let i = 0; i < enemies; i++)
     {
+        let value = {
+            damage: config.enemies.damage,
+            health: _randomIntFromInterval(config.enemies.health.min * level, config.enemies.health.max * level)
+        };
+
         // attempt placing a enemy until we're successful
         while(!_addElementToMap('enemy', value));
     }
@@ -527,7 +541,7 @@ function _addWeaponsToMap(level)
 
         // attempt placing a potion until we're successful
         while(!_addElementToMap('weapon', {
-            name: levelWeapons[weapon].type,
+            name: levelWeapons[weapon].name,
             damage: levelWeapons[weapon].damage
         }));
     }
@@ -536,7 +550,10 @@ function _addWeaponsToMap(level)
 // add weapons to the map
 function _addBossToMap(level)
 {
-    let value = config.boss.value;
+    let value = {
+        damage: config.boss.damage,
+        health: config.boss.health
+    };
 
     // attempt placing a potion until we're successful
     while(!_addElementToMap('boss', value));
@@ -553,11 +570,7 @@ function _addPortalToMap(level)
 function _addStartingPositionToMap()
 {
     // attempt placing a potion until we're successful
-    while(!_addElementToMap('user', {
-        health: config.start.health,
-        weapon: config.weapons.types[0],
-        xp: config.start.xp
-    }));
+    while(!_addElementToMap('user', user));
 }
 
 // add an interactive game element to the map
@@ -577,7 +590,7 @@ function _addElementToMap(type, value)
 
         if( type === 'user' )
         {
-            userPosition = [x, y];
+            user.position = [x, y];
         }
 
         return true;
@@ -592,14 +605,51 @@ function _moveUserInMap(from, to)
         [x2, y2] = to,
         userValue = map[y1][x1].element;
 
-    // only move if element isn't 'enemy' or 'boss' (or they're beaten)
-    // calc new user values (if square element is set)
-    if( map[y2][x2].element &&
-        map[y2][x2].element !== 'corridor' &&
-        map[y2][x2].element !== 'portal' )
+    // if square moving to has a game element set
+    if( map[y2][x2].element )
     {
-        // calc new user value
-        console.log(map[y2][x2].element.value);
+        console.log(map[y2][x2].element);
+        switch(map[y2][x2].element.type)
+        {
+            case 'weapon':
+                userValue.value.weapon = map[y2][x2].element.value;
+                user.messages.push('[' + userValue.value.weapon.name + ' (' + userValue.value.weapon.damage + ')]: You picked up a new weapon');
+                break;
+            case 'potion':
+                userValue.value.health = userValue.value.health + map[y2][x2].element.value;
+                user.messages.push('[+10 health]: You picked up a potion');
+                break;
+            case 'enemy':
+                //return;
+                let userAttack = user.weapon.damage + user.xp;
+                let enemyValue = map[y2][x2].element.value;
+
+                // attack the enemy
+                enemyValue.health -= userAttack;
+                user.messages.push('[' + userAttack + ' attack, ' + ( enemyValue.health >= 0 ? enemyValue.health : 0 ) + ' remaining]: You attack the enemy');
+
+                // check if enemy still alive
+                if( enemyValue.health > 0 )
+                {
+                    // enemy retaliates
+                    userValue.value.health -= enemyValue.damage;
+                    user.health = userValue.value.health;
+                    map[y1][x1].element.value.health = user.health;
+                    user.messages.push('[-' + enemyValue.damage + ' health]: The enemy retaliates');
+                    return;
+                }
+
+                // user gains experience
+                userValue.value.xp += 2;
+                user.messages.push('[+2 XP]: The enemy is defeated');
+                break;
+            case 'boss':
+                //userValue.value.health = userValue.value.health + map[y2][x2].element.value;
+                break;
+            case 'portal':
+                // reset the map
+                return;
+        }
     }
 
     // move to the new square
@@ -613,8 +663,10 @@ function _moveUserInMap(from, to)
         openSpace: true
     };
 
-    // update the user position
-    userPosition = to;
+    // update the user details
+    user.position = to;
+    user.weapon = userValue.value.weapon;
+    user.xp = userValue.value.xp;
 }
 
 // attempt moving user to the specified square
@@ -624,7 +676,7 @@ function _moveToSquare(x, y)
 
     if(newSquare.openSpace)
     {
-        _moveUserInMap(userPosition, [x, y]);
+        _moveUserInMap(user.position, [x, y]);
     }
 }
 
