@@ -44,3 +44,27 @@
 .dungeonBoard__cell--wall {
   background: orange;
 }
+
+.dungeonBoard__cell--potion {
+  background: lightgreen;
+}
+
+.dungeonBoard__cell--enemy {
+  background: red;
+}
+
+.dungeonBoard__cell--boss {
+  background: purple;
+}
+
+.dungeonBoard__cell--portal {
+  background: blue;
+}
+
+.dungeonBoard__cell--weapon {
+  background: yellow;
+}
+
+.dungeonBoard__cell--user {
+  background: magenta;
+}

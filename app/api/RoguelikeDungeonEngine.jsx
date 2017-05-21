@@ -4,8 +4,76 @@
 let config = {
     sizeX: 40,
     sizeY: 40,
-    minRooms: 7,
-    maxRooms: 10
+    rooms: [
+        7, // min
+        10 // max
+    ],
+    potions: {
+        max: 4,
+        min: 7,
+        value: 10
+    },
+    enemies: {
+        max: 4,
+        min: 7,
+        damage: -10
+    },
+    weapons: {
+        max: 2,
+        min: 4,
+        types: [{
+            levels: [1],
+            type: 'Fists',
+            damage: 1
+        },
+        {
+            levels: [1],
+            type: 'Dagger',
+            damage: 2
+        },
+        {
+            levels: [1, 2],
+            type: 'Nunchucks',
+            damage: 3
+        },
+        {
+            levels: [2],
+            type: 'Sword',
+            damage: 4
+        },
+        {
+            levels: [2, 3],
+            type: 'Pistol',
+            damage: 5
+        },
+        {
+            levels: [3],
+            type: 'Shotgun',
+            damage: 6
+        },
+        {
+            levels: [3, 4],
+            type: 'M-16',
+            damage: 7
+        },
+        {
+            levels: [4],
+            type: 'Grenade',
+            damage: 8
+        },
+        {
+            levels: [4],
+            type: 'Rocket Launcher',
+            damage: 9
+        }]
+    },
+    boss: {
+        value: 200
+    },
+    start: {
+        health: 100,
+        xp: 0
+    }
 };
 
 // directions of travel
@@ -14,6 +82,10 @@ let directions = ['N', 'S', 'W', 'E'];
 // number of rooms
 let numberOfRooms = 0;
 
+// rooms in the game
+let rooms = [];
+
+// the current room to spawn other rooms off of
 let currentRoom = {
     width: 0,
     height: 0,
@@ -24,20 +96,93 @@ let currentRoom = {
 // the map
 let map = [];
 
+// starting postion
+let userPosition = [];
+
 // exported object
 module.exports = {
   // public functions
-  generateMap: function()
+  generateMap: function(level)
   {
       map = _getEmptyDungeonMap(config.sizeX, config.sizeY);
 
+      // generate the dungeon rooms
       _generateRooms();
 
-      return map;
+      // add heath potions to map
+      _addHealthPotionsToMap(level);
+
+      // add enemies to the map
+      _addEnemiesToMap(level);
+
+      // add weapons to the map
+      _addWeaponsToMap(level);
+
+      // check for final level
+      if(level === 4)
+      {
+          // add weapons to the map
+          _addBossToMap();
+      }
+      else
+      {
+          // add portal to next level to the map
+          _addPortalToMap();
+      }
+
+      // add character starting position to map
+      _addStartingPositionToMap();
+
+      // return the current game state
+      return _getCurrentState();
+  },
+  moveLeft: function()
+  {
+      // attempt moving to another square
+      _moveToSquare( (userPosition[0] - 1), (userPosition[1]) );
+
+      // return the current game state
+      return _getCurrentState();
+  },
+  moveRight: function()
+  {
+      // attempt moving to another square
+      _moveToSquare( (userPosition[0] + 1), (userPosition[1]) );
+
+      // return the current game state
+      return _getCurrentState();
+  },
+  moveUp: function()
+  {
+      // attempt moving to another square
+      _moveToSquare( (userPosition[0]), (userPosition[1] - 1) );
+
+      // return the current game state
+      return _getCurrentState();
+  },
+  moveDown: function()
+  {
+      // attempt moving to another square
+      _moveToSquare( (userPosition[0]), (userPosition[1] + 1) );
+
+      // return the current game state
+      return _getCurrentState();
   }
 };
 
 // ----- private functions ---------------
+
+function _getCurrentState()
+{
+    return {
+          squares: map,
+          user: {
+              health: config.start.health,
+              xp: config.start.xp,
+              position: userPosition
+          }
+      };
+}
 
 // generate random room size
 function _getRandomRoomSize()
@@ -49,7 +194,7 @@ function _getRandomRoomSize()
     ];
 }
 
-// return a random roomsize between min & max
+// return a random odd vlaue room size
 function _getRandomOddInt()
 {
     let min = 2,
@@ -68,17 +213,24 @@ function _getEmptyDungeonMap(sizeX, sizeY)
     ));
 }
 
+// generate all of the rooms in for the level
 function _generateRooms()
 {
     // place the first room
     _placeFirstRoom();
 
-    let targetNumberOfRooms = _randomIntFromInterval(config.minRooms, config.maxRooms);
+    let targetNumberOfRooms = _randomIntFromInterval(config.rooms[0], config.rooms[0]);
+    let attempts = 0;
 
     // add next level of rooms
-    while(_addNextLevelRooms(targetNumberOfRooms)){}
+    while(_addNextLevelRooms(targetNumberOfRooms) || attempts >= 10)
+    {
+        // make sure we don't get stuck in an infinite loop
+        attempts++
+    };
 }
 
+// place the first room in a random position on the grid
 function _placeFirstRoom()
 {
     // get room size
@@ -100,7 +252,7 @@ function _placeFirstRoom()
     numberOfRooms = 1;
 }
 
-// generate a random room position
+// generate a random room / element position
 function _getRandomPosition(width, height)
 {
     let withinX = config.sizeX - width - 1,
@@ -119,6 +271,7 @@ function _randomIntFromInterval(min, max)
     return Math.floor( Math.random() * ( max - min + 1 ) + min );
 }
 
+// attempt to spawn rooms from the 'current room' to the North, East, South & West
 function _addNextLevelRooms(targetNumberOfRooms)
 {
     console.log(targetNumberOfRooms);
@@ -180,19 +333,12 @@ function _addNextLevelRooms(targetNumberOfRooms)
                 break;
         }
 
-        let colours = {
-            N: 'magenta',
-            E: 'cyan',
-            S: 'yellow',
-            W: 'purple'
-        };
-
         // check for any room / boundary collisions & current number of rooms
         if( !_roomCollision(map, roomToPlace, positionAttempt) &&
             numberOfRooms !== targetNumberOfRooms)
         {
             // place the room if all is well
-            _placeRoom(map, roomToPlace, positionAttempt, colours[compassPoints[i]]);
+            _placeRoom(map, roomToPlace, positionAttempt);
 
             lastRoomPlaced = {
                 width: roomToPlace[0],
@@ -200,6 +346,12 @@ function _addNextLevelRooms(targetNumberOfRooms)
                 x: positionAttempt[0],
                 y: positionAttempt[1]
             };
+            rooms.push({
+                width: lastRoomPlaced.width,
+                height: lastRoomPlaced.height,
+                x: lastRoomPlaced.x,
+                y: lastRoomPlaced.y
+            });
             numberOfRooms++;
 
             // add a corridor between the current & just placed rooms
@@ -207,9 +359,35 @@ function _addNextLevelRooms(targetNumberOfRooms)
         }
     }
 
-    console.log(lastRoomPlaced);
+    // set the current room to spawn off of
+    if(lastRoomPlaced.height !== undefined)
+    {
+        currentRoom = {
+            width: lastRoomPlaced.width,
+            height: lastRoomPlaced.height,
+            x: lastRoomPlaced.x,
+            y: lastRoomPlaced.y
+        };
+    }
+    else
+    {
+        let randomRoom = _randomIntFromInterval( 0, (rooms.length - 1) );
 
-    return false;
+        // set current room to spawn from randomly
+        currentRoom = {
+            width: rooms[randomRoom].width,
+            height: rooms[randomRoom].height,
+            x: rooms[randomRoom].x,
+            y: rooms[randomRoom].y
+        };
+    }
+    
+    if( numberOfRooms === targetNumberOfRooms )
+    {
+        return false;
+    }
+
+    return true;
 }
 
 // check for a collision of rooms (attempted position already populated)
@@ -240,15 +418,14 @@ function _roomCollision(map, room, positionAttempt)
 }
 
 // place room in the grid (mark squares as populated)
-function _placeRoom(map, room, positionAttempt, colour = '')
+function _placeRoom(map, room, positionAttempt)
 {
     for(let x = positionAttempt[0]; x < positionAttempt[0] + room[0]; x++)
     {
         for(let y = positionAttempt[1]; y < positionAttempt[1] + room[1]; y++)
         {
             map[y][x] = {
-                openSpace: true,
-                colour: colour
+                openSpace: true
             };
         }
     }
@@ -295,8 +472,177 @@ function _placeCorridor(firstRoom, secondRoom, direction)
 
         // place the corridor
         map[y][x] = {
-            openSpace: true
+            openSpace: true,
+            element: {
+                type: 'corridor',
+                value: direction
+            }
         };
+}
+
+// add heath potions to map
+function _addHealthPotionsToMap(level)
+{
+    let potions = _randomIntFromInterval(config.potions.min, config.potions.max);
+    let value = config.potions.value;
+
+    // place each of the potions
+    for(let i = 0; i < potions; i++)
+    {
+        // attempt placing a potion until we're successful
+        while(!_addElementToMap('potion', value));
+    }
+}
+
+// add enemies to the map
+function _addEnemiesToMap(level)
+{
+    let enemies = _randomIntFromInterval(config.enemies.min, config.enemies.max);
+    let value = config.enemies.damage;
+
+    // place each of the enemies
+    for(let i = 0; i < enemies; i++)
+    {
+        // attempt placing a enemy until we're successful
+        while(!_addElementToMap('enemy', value));
+    }
+}
+
+// add weapons to the map
+function _addWeaponsToMap(level)
+{
+    let weapons = _randomIntFromInterval(config.weapons.min, config.weapons.max);
+    let levelWeapons = config.weapons.types.filter(weapon => {
+        if(weapon.levels.includes(level))
+        {
+            return weapon;
+        }
+    });
+
+    // place each of the weapons
+    for(let i = 0; i < weapons; i++)
+    {
+        // get a random weapon
+        let weapon = _randomIntFromInterval(0, levelWeapons.length - 1);
+
+        // attempt placing a potion until we're successful
+        while(!_addElementToMap('weapon', {
+            name: levelWeapons[weapon].type,
+            damage: levelWeapons[weapon].damage
+        }));
+    }
+}
+
+// add weapons to the map
+function _addBossToMap(level)
+{
+    let value = config.boss.value;
+
+    // attempt placing a potion until we're successful
+    while(!_addElementToMap('boss', value));
+}
+
+// add portal to the next level to the map
+function _addPortalToMap(level)
+{
+    // attempt placing a potion until we're successful
+    while(!_addElementToMap('portal', level));
+}
+
+// add character starting position to map
+function _addStartingPositionToMap()
+{
+    // attempt placing a potion until we're successful
+    while(!_addElementToMap('user', {
+        health: config.start.health,
+        weapon: config.weapons.types[0],
+        xp: config.start.xp
+    }));
+}
+
+// add an interactive game element to the map
+function _addElementToMap(type, value)
+{
+    let [x, y] = _getRandomPosition(1, 1);
+
+    if( map[y][x].openSpace &&              // not in a wall
+        map[y][x].element === undefined &&  // no element currently present
+        !_elementsSurrounding(x, y)         // not other elements next to this one
+    )
+    {
+        map[y][x].element = {
+            type: type,
+            value: value
+        };
+
+        if( type === 'user' )
+        {
+            userPosition = [x, y];
+        }
+
+        return true;
+    }
+
+    return false;
+}
+
+function _moveUserInMap(from, to)
+{
+    let [x1, y1] = from,
+        [x2, y2] = to,
+        userValue = map[y1][x1].element;
+
+    // only move if element isn't 'enemy' or 'boss' (or they're beaten)
+    // calc new user values (if square element is set)
+    if( map[y2][x2].element &&
+        map[y2][x2].element !== 'corridor' &&
+        map[y2][x2].element !== 'portal' )
+    {
+        // calc new user value
+        console.log(map[y2][x2].element.value);
+    }
+
+    // move to the new square
+    map[y2][x2] = {
+        openSpace: true,
+        element: userValue
+    };
+
+    // clear the previous square
+    map[y1][x1] = {
+        openSpace: true
+    };
+
+    // update the user position
+    userPosition = to;
+}
+
+// attempt moving user to the specified square
+function _moveToSquare(x, y)
+{
+    let newSquare = map[y][x];
+
+    if(newSquare.openSpace)
+    {
+        _moveUserInMap(userPosition, [x, y]);
+    }
+}
+
+// check for any elements surrounding the specified square
+function _elementsSurrounding(xEle, yEle)
+{
+    for(let x = (xEle - 1); x <= (xEle + 1); x++)
+    {
+        for(let y = (yEle - 1); y <= (yEle + 1); y++)
+        {
+            if( map[y][x].element )
+            {
+                return true;
+            }
+        }
+    }
+
+    return false;
 }
 
 // shuffle an array

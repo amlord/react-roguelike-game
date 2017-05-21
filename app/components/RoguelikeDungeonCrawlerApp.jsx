@@ -8,14 +8,51 @@ var DungeonBoard = require('DungeonBoard');
 var RoguelikeDungeonCrawlerApp = React.createClass({
     getInitialState: function()
     {
+        let mapState = RoguelikeDungeonEngine.generateMap(1);
+
         return {
-          squares: RoguelikeDungeonEngine.generateMap()
+          squares: mapState.squares,
+          user: mapState.user
         };
+    },
+    handleKeyPress: function(event)
+    {
+        console.log(event.key);
+    },
+    componentDidMount: function()
+    {
+        // bind keypress event listner to document
+        document.addEventListener('keydown', (event) =>
+        {
+            let mapState = {};
+
+            switch(event.code)
+            {
+                case 'ArrowLeft':
+                    mapState = RoguelikeDungeonEngine.moveLeft();
+                    break;
+                case 'ArrowRight':
+                    mapState = RoguelikeDungeonEngine.moveRight();
+                    break;
+                case 'ArrowUp':
+                    mapState = RoguelikeDungeonEngine.moveUp();
+                    break;
+                case 'ArrowDown':
+                    mapState = RoguelikeDungeonEngine.moveDown();
+                    break;
+                default:
+                    return;
+            }
+
+            // update the map state
+            this.setState({
+                squares: mapState.squares,
+                user: mapState.user
+            });
+        });
     },
     render: function()
     {
-        //var room = RoguelikeDungeonEngine.randomRoom();
-
         return (
             <div>
               <div>Scoreboard: </div>
