@@ -14,11 +14,11 @@ var RoguelikeDungeonCrawlerApp = React.createClass({
     },
     render: function()
     {
-        var room = RoguelikeDungeonEngine.randomRoom();
+        //var room = RoguelikeDungeonEngine.randomRoom();
 
         return (
             <div>
-              <div>Scoreboard: {room[0] + ", " + room[1]}</div>
+              <div>Scoreboard: </div>
               <div className="dungeon">
                 <DungeonBoard squares={this.state.squares} />
                 <div className="dungeonViewer"></div>

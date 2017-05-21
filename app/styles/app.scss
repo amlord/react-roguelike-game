@@ -1,12 +1,14 @@
 // Overrides
 .portfolio__container {
   width: 450px;
+      max-width: none;
+    width: 440px;
 }
 
 // Dungeon
 .dungeon {
   position: relative;
-  height: 410px;
+  height: 400px;
   width: 100%;
   border: 1px solid #000;
   border-radius: 4px;
@@ -20,11 +22,12 @@
   height: 100%;
   width: 100%;
   background:radial-gradient(ellipse at center, rgba(255,255,255,0) 0%, rgba(255,255,255,0) 50%, rgba(0,0,0,1) 79%, rgba(0,0,0,1) 100%);
+  display: none;
 }
 
 .dungeonBoard {
-  height: 800px;
-  width: 1000px;
+  height: 400px;
+  width: 400px;
   background: url(https://s3.eu-west-2.amazonaws.com/amlstatic/img/concrete-floor.png);
 }
 
